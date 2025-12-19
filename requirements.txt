@@ -1,2 +1,4 @@
 psutil
 pygetwindow
+pystray
+Pillow
