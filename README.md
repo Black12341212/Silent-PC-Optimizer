@@ -22,7 +22,7 @@
 
 1.  **Клонируйте репозиторий:**
     ```bash
-    git clone https://github.com/ВАШ_НИКНЕЙМ/Silent-PC-Optimizer.git
+    git clone https://github.com/Black12341212/Silent-PC-Optimizer.git
     ```
 2.  **Установите библиотеки:**
     ```bash
@@ -44,4 +44,5 @@
 Посмотрите также **SmartDownloadsSorter** — моя программа для автоматической сортировки папки "Загрузки" с удобным GUI.
 
 ---
+
 **Disclaimer:** Утилита чистит папку %TEMP%. Это безопасно, но используйте на свой страх и риск.
