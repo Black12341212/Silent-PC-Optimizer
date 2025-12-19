@@ -22,7 +22,7 @@
 
 1.  **Скачайте проект:**
     ```bash
-    git clone https://github.com/ВАШ_НИКНЕЙМ/Silent-PC-Optimizer.git
+    git clone https://github.com/Black12341212/Silent-PC-Optimizer.git
     ```
 2.  **Установите зависимости:**
     ```bash
@@ -38,4 +38,5 @@
 
 ```python
 RAM_THRESHOLD = 85.0  # При каком % занятой памяти срабатывать
+
 CHECK_INTERVAL = 30   # Как часто проверять систему (в секундах)
