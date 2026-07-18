@@ -1,4 +1,0 @@
-psutil
-pygetwindow
-pystray
-Pillow
