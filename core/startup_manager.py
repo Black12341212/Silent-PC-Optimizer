@@ -1,0 +1,163 @@
+import os
+import subprocess
+from core.logger import logger
+
+
+def _ps_escape(value):
+    return str(value).replace("`", "``").replace('"', '`"')
+
+
+def get_startup_programs():
+    programs = []
+    startup_dirs = [
+        os.path.join(os.environ.get("APPDATA", ""), "Microsoft", "Windows",
+                     "Start Menu", "Programs", "Startup"),
+        os.path.join(os.environ.get("PROGRAMDATA", ""), "Microsoft", "Windows",
+                     "Start Menu", "Programs", "Startup"),
+    ]
+    for startup_dir in startup_dirs:
+        if not os.path.exists(startup_dir):
+            continue
+        for f in os.listdir(startup_dir):
+            fp = os.path.join(startup_dir, f)
+            programs.append({
+                "name": os.path.splitext(f)[0],
+                "path": fp,
+                "type": "file",
+                "enabled": True,
+                "source": "startup_folder",
+            })
+    reg_paths = [
+        (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKCU"),
+        (r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce", "HKCU"),
+        (r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKLM"),
+        (r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce", "HKLM"),
+    ]
+    for reg_path, hive in reg_paths:
+        try:
+            key_cmd = f'Get-ItemProperty -Path "{hive}:{reg_path}" -ErrorAction SilentlyContinue'
+            result = subprocess.run(
+                ["powershell", "-Command", key_cmd],
+                capture_output=True, text=True, timeout=15, creationflags=0x08000000
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                import json
+                props = json.loads(
+                    "[" + result.stdout.strip().replace("\n", ",").rstrip(",") + "]"
+                    if "\n" in result.stdout
+                    else result.stdout.strip()
+                ) if result.stdout.strip().startswith("{") else []
+                if isinstance(props, dict):
+                    props = [props]
+                for prop in props:
+                    for k, v in prop.items():
+                        if k.startswith("(default") or k.startswith("PS"):
+                            continue
+                        if isinstance(v, str) and ("\\exe" in v.lower() or v.lower().endswith(".exe")):
+                            programs.append({
+                                "name": k,
+                                "path": v,
+                                "type": "registry",
+                                "enabled": True,
+                                "source": f"registry_{hive}",
+                                "reg_path": f"{hive}:{reg_path}",
+                            })
+        except Exception:
+            pass
+    return programs
+
+
+def disable_startup_program(program):
+    if program.get("type") == "file":
+        try:
+            fp = program["path"]
+            disabled_path = fp + ".disabled"
+            os.rename(fp, disabled_path)
+            program["path"] = disabled_path
+            program["enabled"] = False
+            logger.info(f"Автозагрузка отключена: {program['name']}")
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка отключения {program['name']}: {e}")
+            return False
+    elif program.get("type") == "registry":
+        try:
+            reg_path = program.get("reg_path", "")
+            name = program.get("name", "")
+            if not reg_path or not name:
+                return False
+            safe_path = _ps_escape(reg_path)
+            safe_name = _ps_escape(name)
+            cmd = f'Remove-ItemProperty -Path "{safe_path}" -Name "{safe_name}" -Force -ErrorAction SilentlyContinue'
+            subprocess.run(
+                ["powershell", "-Command", cmd],
+                capture_output=True, timeout=15, creationflags=0x08000000
+            )
+            program["enabled"] = False
+            logger.info(f"Реестр автозагрузки отключён: {name}")
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка: {e}")
+            return False
+    return False
+
+
+def enable_startup_program(program):
+    if program.get("type") == "file":
+        try:
+            fp = program["path"]
+            if fp.endswith(".disabled"):
+                enabled_path = fp[:-9]
+                os.rename(fp, enabled_path)
+                program["path"] = enabled_path
+                program["enabled"] = True
+                logger.info(f"Автозагрузка включена: {program['name']}")
+                return True
+        except Exception as e:
+            logger.error(f"Ошибка: {e}")
+            return False
+    return False
+
+
+def uninstall_program(program_name):
+    try:
+        safe_name = _ps_escape(program_name)
+        result = subprocess.run(
+            ["powershell", "-Command",
+             f'Get-WmiObject -Class Win32_Product | Where-Object {{$_.Name -like "*{safe_name}*"}} | ForEach-Object {{$_.Uninstall()}}'],
+            capture_output=True, text=True, timeout=120, creationflags=0x08000000
+        )
+        if result.returncode == 0:
+            logger.info(f"Программа удалена: {program_name}")
+            return True, result.stdout
+        return False, result.stderr
+    except Exception as e:
+        logger.error(f"Ошибка удаления {program_name}: {e}")
+        return False, str(e)
+
+
+def get_installed_programs():
+    programs = []
+    try:
+        result = subprocess.run(
+            ["powershell", "-Command",
+             "Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*, HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate, EstimatedSize | Where-Object {$_.DisplayName} | ConvertTo-Json"],
+            capture_output=True, text=True, timeout=30, creationflags=0x08000000
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            import json
+            data = json.loads(result.stdout.strip())
+            if isinstance(data, dict):
+                data = [data]
+            for item in data:
+                programs.append({
+                    "name": item.get("DisplayName", ""),
+                    "version": item.get("DisplayVersion", ""),
+                    "publisher": item.get("Publisher", ""),
+                    "install_date": item.get("InstallDate", ""),
+                    "size_mb": round((item.get("EstimatedSize", 0) or 0) / 1024, 1),
+                })
+            programs.sort(key=lambda p: p["name"].lower())
+    except Exception as e:
+        logger.error(f"Ошибка получения списка программ: {e}")
+    return programs

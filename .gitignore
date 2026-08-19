@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.log
+logs.log
+dist/
+build/
+*.spec
+optimization_history.json
