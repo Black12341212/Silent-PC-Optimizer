@@ -484,7 +484,7 @@ class MainWindow:
 
     def _disable_services(self):
         try:
-            svcs = self.config.get("disable_services", [])
+            svcs = self.config.get("service_management", {}).get("disable_list", [])
             disabled = 0
             for svc in svcs:
                 try:
@@ -1292,80 +1292,73 @@ class MainWindow:
 
         canvas.bind_all("<MouseWheel>", _bind_mousewheel)
 
-        sections = {
-            "General": [
-                ("auto_clean", "Auto Clean on Startup", "bool"),
-                ("clean_temp", "Clean Temp Files", "bool"),
-                ("clean_dns", "Clean DNS Cache", "bool"),
-                ("clean_prefetch", "Clean Prefetch", "bool"),
-                ("clean_thumbnail_cache", "Clean Thumbnail Cache", "bool"),
-                ("clean_font_cache", "Clean Font Cache", "bool"),
-                ("clean_browser_cache", "Clean Browser Cache", "bool"),
-                ("clean_recycle_bin", "Clean Recycle Bin", "bool"),
-                ("clean_windows_update_cache", "Clean WinUpdate Cache", "bool"),
-            ],
-            "Services": [
-                ("disable_services", "Services to Disable", "list"),
-            ],
-            "Optimization": [
-                ("optimize_disk", "Auto Optimize Disk", "bool"),
-                ("trim_ssd", "TRIM SSD", "bool"),
-                ("defrag_hdd", "Defrag HDD", "bool"),
-            ],
-            "Security": [
-                ("clean_browser_history", "Clean Browser History", "bool"),
-                ("clean_recent_files", "Clean Recent Files", "bool"),
-                ("auto_defender_scan", "Auto Defender Scan", "bool"),
-            ],
-            "Startup": [
-                ("disable_startup_programs", "Startup Programs to Disable", "list"),
-            ],
-            "Scheduling": [
-                ("auto_schedule", "Enable Auto Schedule", "bool"),
-                ("schedule_interval_hours", "Interval (hours)", "int"),
-            ],
-            "Encryption": [
-                ("default_algorithm", "Default Algorithm", "str"),
-            ],
-            "Benchmark": [
-                ("benchmark_iterations", "Benchmark Iterations", "int"),
-                ("benchmark_file_size_mb", "File Size MB", "int"),
-            ],
-        }
+        sections = [
+            ("General", [
+                (("temp_cleaning", "enabled"), "Clean Temp Files", "bool"),
+                (("dns_cache_clean",), "Clean DNS Cache", "bool"),
+                (("prefetch_clean",), "Clean Prefetch", "bool"),
+                (("thumbnail_cache_clean",), "Clean Thumbnail Cache", "bool"),
+                (("font_cache_clean",), "Clean Font Cache", "bool"),
+                (("clean_browser_cache",), "Clean Browser Cache", "bool"),
+                (("clean_recycle_bin",), "Clean Recycle Bin", "bool"),
+                (("windows_update_cache_clean",), "Clean WinUpdate Cache", "bool"),
+            ]),
+            ("Services", [
+                (("service_management", "disable_list"), "Services to Disable (comma separated)", "list"),
+            ]),
+            ("Optimization", [
+                (("disk_optimization", "auto_trim_ssd"), "TRIM SSD", "bool"),
+                (("disk_optimization", "auto_defrag_hdd"), "Defrag HDD", "bool"),
+                (("disk_optimization", "check_health"), "Check Disk Health", "bool"),
+            ]),
+            ("Security", [
+                (("security", "clean_browser_history"), "Clean Browser History", "bool"),
+                (("security", "clean_recent_files"), "Clean Recent Files", "bool"),
+                (("security", "clean_windows_logs"), "Clean Windows Logs", "bool"),
+            ]),
+            ("Startup", [
+                (("startup_cleaning",), "Clean Startup on Optimize", "bool"),
+            ]),
+            ("Scheduling", [
+                (("scheduled_optimization", "enabled"), "Enable Auto Schedule", "bool"),
+                (("scheduled_optimization", "interval_hours"), "Interval (hours)", "int"),
+            ]),
+        ]
 
         row = 0
-        for section_name, fields in sections.items():
+        for section_name, fields in sections:
             header = tk.Label(self.settings_frame, text=section_name, bg=bg, fg=accent,
                               font=("Segoe UI", 13, "bold"))
             header.grid(row=row, column=0, columnspan=2, sticky="w", pady=(15, 5), padx=5)
             row += 1
 
-            for key, label, dtype in fields:
+            for path, label, dtype in fields:
                 lbl = tk.Label(self.settings_frame, text=label, bg=bg, fg=fg,
                                font=("Segoe UI", 10))
                 lbl.grid(row=row, column=0, sticky="w", padx=10, pady=3)
 
+                current = self._cfg_get(path)
                 if dtype == "bool":
-                    var = tk.BooleanVar(value=bool(self.config.get(key, False)))
+                    var = tk.BooleanVar(value=bool(current))
                     entry = tk.Checkbutton(self.settings_frame, variable=var,
                                             bg=bg, fg=fg, selectcolor=surface,
                                             activebackground=bg, activeforeground=fg)
                 elif dtype == "list":
-                    var = tk.StringVar(value=", ".join(self.config.get(key, [])))
+                    var = tk.StringVar(value=", ".join(current or []))
                     entry = tk.Entry(self.settings_frame, textvariable=var, width=40,
                                      bg=surface, fg=fg, insertbackground=fg,
                                      font=("Consolas", 9), relief=tk.FLAT,
                                      highlightthickness=1,
                                      highlightbackground=self.tm.get("border"))
                 elif dtype == "int":
-                    var = tk.StringVar(value=str(self.config.get(key, 0)))
+                    var = tk.StringVar(value=str(current if current is not None else 0))
                     entry = tk.Entry(self.settings_frame, textvariable=var, width=20,
                                      bg=surface, fg=fg, insertbackground=fg,
                                      font=("Consolas", 9), relief=tk.FLAT,
                                      highlightthickness=1,
                                      highlightbackground=self.tm.get("border"))
                 else:
-                    var = tk.StringVar(value=str(self.config.get(key, "")))
+                    var = tk.StringVar(value=str(current if current is not None else ""))
                     entry = tk.Entry(self.settings_frame, textvariable=var, width=40,
                                      bg=surface, fg=fg, insertbackground=fg,
                                      font=("Consolas", 9), relief=tk.FLAT,
@@ -1373,7 +1366,7 @@ class MainWindow:
                                      highlightbackground=self.tm.get("border"))
 
                 entry.grid(row=row, column=1, sticky="w", padx=10, pady=3)
-                self.settings_entries[key] = (var, dtype)
+                self.settings_entries[".".join(path)] = (var, dtype, path)
                 row += 1
 
         self.settings_frame.columnconfigure(0, weight=0)
@@ -1388,21 +1381,39 @@ class MainWindow:
                              relief=tk.FLAT, padx=20, pady=6, cursor="hand2")
         save_btn.pack()
 
+    def _cfg_get(self, path):
+        cur = self.config
+        for k in path:
+            if isinstance(cur, dict) and k in cur:
+                cur = cur[k]
+            else:
+                return None
+        return cur
+
+    def _cfg_set(self, path, value):
+        cur = self.config
+        for k in path[:-1]:
+            if not isinstance(cur.get(k), dict):
+                cur[k] = {}
+            cur = cur[k]
+        cur[path[-1]] = value
+
     def _save_settings(self):
         try:
-            for key, (var, dtype) in self.settings_entries.items():
+            for sid, (var, dtype, path) in self.settings_entries.items():
                 raw = var.get()
                 if dtype == "bool":
-                    self.config[key] = bool(raw)
+                    value = bool(raw)
                 elif dtype == "int":
                     try:
-                        self.config[key] = int(raw)
+                        value = int(raw)
                     except ValueError:
-                        self.config[key] = 0
+                        value = 0
                 elif dtype == "list":
-                    self.config[key] = [s.strip() for s in raw.split(",") if s.strip()]
+                    value = [s.strip() for s in raw.split(",") if s.strip()]
                 else:
-                    self.config[key] = raw
+                    value = raw
+                self._cfg_set(path, value)
 
             save_config(self.config)
             messagebox.showinfo("Success", "Settings saved successfully.")

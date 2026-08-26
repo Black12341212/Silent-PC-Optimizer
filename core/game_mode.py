@@ -89,15 +89,28 @@ class GameMode:
 
     def _set_process_priorities(self, level):
         priority_map = {
-            "high": psutil.HIGH_PRIORITY_CLASS if hasattr(psutil, 'HIGH_PRIORITY_CLASS') else -10,
-            "normal": psutil.NORMAL_PRIORITY_CLASS if hasattr(psutil, 'NORMAL_PRIORITY_CLASS') else 10,
+            "high": psutil.HIGH_PRIORITY_CLASS if hasattr(psutil, 'HIGH_PRIORITY_CLASS') else 256,
+            "above_normal": psutil.ABOVE_NORMAL_PRIORITY_CLASS if hasattr(psutil, 'ABOVE_NORMAL_PRIORITY_CLASS') else 32768,
+            "normal": psutil.NORMAL_PRIORITY_CLASS if hasattr(psutil, 'NORMAL_PRIORITY_CLASS') else 32,
         }
-        nice_val = priority_map.get(level, 10)
-        try:
-            proc = psutil.Process()
-            proc.nice(nice_val)
-        except Exception:
-            pass
+        nice_val = priority_map.get(level, priority_map["normal"])
+        gm_cfg = self.config.get("game_mode", {})
+        watch_apps = [a.lower() for a in gm_cfg.get("watch_apps", [])]
+        if not watch_apps:
+            return
+        for proc in psutil.process_iter(["pid", "name"]):
+            try:
+                name = proc.info.get("name")
+                if not name:
+                    continue
+                if any(wa in name.lower() for wa in watch_apps):
+                    p = psutil.Process(proc.info["pid"])
+                    try:
+                        p.nice(nice_val)
+                    except Exception:
+                        pass
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
 
     @property
     def is_active(self):

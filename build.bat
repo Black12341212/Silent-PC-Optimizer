@@ -4,14 +4,7 @@ echo   Silent PC Optimizer - Build Script
 echo ========================================
 echo.
 
-where pyinstaller >nul 2>nul
-if %errorlevel% neq 0 (
-    echo PyInstaller not found. Installing...
-    pip install pyinstaller
-)
-
-echo Building...
-pyinstaller --onefile --windowed --name "Silent PC Optimizer" ^
+python -m PyInstaller --onefile --windowed --name "Silent PC Optimizer" ^
     --add-data "settings.json;." ^
     --hidden-import pystray._win32 ^
     --hidden-import PIL ^

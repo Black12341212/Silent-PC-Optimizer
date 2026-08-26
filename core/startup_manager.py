@@ -119,18 +119,36 @@ def enable_startup_program(program):
     return False
 
 
+def _ps_escape_str(value):
+    return str(value).replace("'", "''")
+
+
 def uninstall_program(program_name):
     try:
-        safe_name = _ps_escape(program_name)
+        safe_name = _ps_escape_str(program_name)
+        ps_script = (
+            "$uninst = $null; "
+            "foreach ($p in @("
+            "'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', "
+            "'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', "
+            "'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')) { "
+            "Get-ItemProperty $p -ErrorAction SilentlyContinue | "
+            "Where-Object { $_.DisplayName -eq '" + safe_name + "' } | "
+            "ForEach-Object { $uninst = $_.UninstallString } "
+            "}; "
+            "if ($uninst) { "
+            "$uninst = $uninst -replace '/I\\{', '/X{' -replace '/i\\{', '/X{'; "
+            "cmd /c \"$uninst\" "
+            "} else { exit 2 }"
+        )
         result = subprocess.run(
-            ["powershell", "-Command",
-             f'Get-WmiObject -Class Win32_Product | Where-Object {{$_.Name -like "*{safe_name}*"}} | ForEach-Object {{$_.Uninstall()}}'],
-            capture_output=True, text=True, timeout=120, creationflags=0x08000000
+            ["powershell", "-Command", ps_script],
+            capture_output=True, text=True, timeout=300, creationflags=0x08000000
         )
         if result.returncode == 0:
             logger.info(f"Программа удалена: {program_name}")
             return True, result.stdout
-        return False, result.stderr
+        return False, result.stderr or "Uninstall command finished with errors."
     except Exception as e:
         logger.error(f"Ошибка удаления {program_name}: {e}")
         return False, str(e)

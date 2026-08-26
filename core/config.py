@@ -10,11 +10,11 @@ DEFAULT_CONFIG = {
     "auto_mode": True,
     "language": "ru",
     "theme": "dark",
-    "temp_cleaning": {
-        "enabled": True,
-        "min_age_hours": 24,
-        "extensions": [".tmp", ".log", ".cab", ".txt", ".dat", ".cache", ".old", ".bak"]
-    },
+        "temp_cleaning": {
+            "enabled": True,
+            "min_age_hours": 24,
+            "extensions": [".tmp", ".log", ".cab"]
+        },
     "clean_tmp_folder": True,
     "clean_recycle_bin": False,
     "clean_browser_cache": False,
