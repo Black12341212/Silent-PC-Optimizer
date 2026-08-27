@@ -1,0 +1,119 @@
+{
+  "ram_threshold": 85.0,
+  "check_interval": 30,
+  "browser_names": ["Chrome", "Firefox", "Edge", "Opera", "Yandex"],
+  "auto_mode": true,
+  "language": "ru",
+  "theme": "dark",
+  "temp_cleaning": {
+    "enabled": true,
+    "min_age_hours": 24,
+    "extensions": [".tmp", ".log", ".cab", ".txt", ".dat", ".cache", ".old", ".bak"]
+  },
+  "clean_tmp_folder": true,
+  "clean_recycle_bin": false,
+  "clean_browser_cache": false,
+  "browser_cache_paths": {
+    "Chrome": "AppData/Local/Google/Chrome/User Data/Default/Cache",
+    "Firefox": "AppData/Local/Mozilla/Firefox/Profiles",
+    "Edge": "AppData/Local/Microsoft/Edge/User Data/Default/Cache"
+  },
+  "background_process_killer": {
+    "enabled": false,
+    "ram_threshold_mb": 500,
+    "whitelist": [
+      "svchost.exe", "explorer.exe", "csrss.exe", "dwm.exe",
+      "system", "smss.exe", "wininit.exe", "services.exe",
+      "lsass.exe", "sihost.exe", "taskhostw.exe", "RuntimeBroker.exe",
+      "pythonw.exe", "python.exe"
+    ]
+  },
+  "hibernation": {
+    "enabled": false,
+    "idle_minutes": 30,
+    "ram_threshold": 90.0,
+    "notify_before_seconds": 10
+  },
+  "autostart": false,
+  "dns_cache_clean": true,
+  "prefetch_clean": true,
+  "thumbnail_cache_clean": true,
+  "font_cache_clean": false,
+  "windows_update_cache_clean": false,
+  "service_management": {
+    "enabled": false,
+    "disable_list": [
+      "SysMain",
+      "WSearch",
+      "Spooler",
+      "DiagTrack",
+      "dmwappushservice",
+      "MapsBroker",
+      "lfsvc",
+      "RetailDemo",
+      "WMPNetworkSvc",
+      "XblAuthManager",
+      "XblGameSave",
+      "XboxNetApiSvc",
+      "XboxGipSvc"
+    ]
+  },
+  "disk_optimization": {
+    "auto_trim_ssd": true,
+    "auto_defrag_hdd": false,
+    "check_health": true
+  },
+  "scheduled_optimization": {
+    "enabled": false,
+    "interval_hours": 2,
+    "daily_time": "03:00",
+    "mode": "interval"
+  },
+  "startup_cleaning": false,
+  "game_mode": {
+    "enabled": false,
+    "watch_apps": ["firefox.exe", "chrome.exe"],
+    "boost_on_launch": true
+  },
+  "streaming_mode": {
+    "enabled": false,
+    "prioritize_obs": true,
+    "prioritize_browsers": true
+  },
+  "presentation_mode": {
+    "enabled": false
+  },
+  "hotkeys": {
+    "optimize": "ctrl+alt+o",
+    "enabled": true
+  },
+  "process_protection": false,
+  "portable_mode": false,
+  "email_alerts": {
+    "enabled": false,
+    "smtp_server": "",
+    "smtp_port": 587,
+    "email": "",
+    "password": "",
+    "recipient": ""
+  },
+  "telegram_alerts": {
+    "enabled": false,
+    "bot_token": "",
+    "chat_id": ""
+  },
+  "alert_thresholds": {
+    "cpu_percent": 90,
+    "ram_percent": 90,
+    "disk_percent": 95,
+    "temperature_celsius": 85
+  },
+  "benchmark": {
+    "last_result": null
+  },
+  "security": {
+    "clean_browser_history": false,
+    "clean_recent_files": true,
+    "clean_windows_logs": false
+  }
+}
