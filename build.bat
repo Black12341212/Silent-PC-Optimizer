@@ -13,6 +13,9 @@ python -m PyInstaller --onefile --windowed --name "Silent PC Optimizer" ^
     --hidden-import keyboard ^
     --hidden-import ctypes ^
     --hidden-import wmi ^
+    --hidden-import cryptography.hazmat.primitives ^
+    --hidden-import core.updater ^
+    --hidden-import core.restore_point ^
     main.pyw
 
 echo.
